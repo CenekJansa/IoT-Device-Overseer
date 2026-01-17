@@ -1,6 +1,6 @@
 # IoT-Device-Overseer - Microservices platform collecting and analyzing data from IoT devices/sensors
 
-This is a team project (team of three students) for the course Service Oriented Architecture (PV217) at the Faculty of Informatics, Masaryk University. In this project, i was responsible for processing service and setting up communication between services using Kafka.
+This is a team project (team of three students) for the course Service Oriented Architecture (PV217) at the Faculty of Informatics, Masaryk University. Project is implemented in Java using Quarkus framework. In this project, I was responsible for processing service and setting up communication between services using Kafka.
 
 ## Official description
 
