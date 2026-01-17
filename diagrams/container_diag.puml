@@ -1,0 +1,71 @@
+@startuml C4_Container
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title **QuarkIoT** Container Diagram
+
+' Define External Systems (from Level 1)
+System_Ext(device, "IoT Device", "Physical hardware (sensor/actuator)")
+System_Ext(app, "Web/Mobile Application", "Client-side interface for users.")
+System_Ext(external_sys, "External Systems", "ERP, Ticketing, etc.")
+
+Boundary(quark_iot, "QuarkIoT Platform") {
+
+    ' 1. IAM
+    Container(iam_svc, "IAM Service", "Microservice (e.g., Spring Boot)", "1. Identity & Access Management (OHS)")
+    
+    ' 2. Device & Asset Management
+    Container(device_mgmt_svc, "Device Management Service", "Microservice (e.g., Spring Boot)", "2. Device & Asset Management (System of Record)")
+
+    ' 3. Telemetry Ingestion
+    Container(ingestion_svc, "Data Ingestion Service", "API Gateway/Microservice (e.g., NodeJS/Go)", "3. Telemetry Ingestion (High-throughput Front-end)")
+
+    ' 7. Command & Control
+    Container(cc_svc, "Command & Control Service", "Microservice (e.g., Spring Boot)", "7. Command & Control (Downlink Dispatcher)")
+
+    ' Data Flow - Stream Processing Components
+    Container(data_proc_svc, "Data Processing Service", "Stream Processor (e.g., Flink/Spark)", "4. Data Processing (Enrichment, Aggregation)")
+    Container(alert_svc, "Alerting & Rules Service", "Stream Processor/Microservice", "5. Alerting & Rules (Real-time Evaluation)")
+    
+    ' 6. Data Analytics
+    Container(analytics_svc, "Analytics Service", "Microservice (e.g., Python/REST API)", "6. Data Analytics (Read-optimized Queries)")
+
+    ' Shared Infrastructure/Data Stores
+    ContainerDb(config_db, "Configuration DB", "PostgreSQL/RDBMS", "Stores IAM, Device Twins, Assets, Rules, Jobs (Transactional Data)")
+    ContainerDb(ts_db, "Time-Series DB", "InfluxDB/Prometheus", "Stores Processed/Aggregated Time-Series Data (Read-heavy)")
+    ContainerQueue(message_bus, "Message Bus", "Kafka/Pulsar Cluster", "Asynchronous communication via Raw and Processed topics")
+
+    ' Internal Relationships (APIs and Messaging)
+
+    ' Synchronous APIs
+    Rel(device_mgmt_svc, config_db, "Reads/Writes Device Twins, Assets")
+    Rel(iam_svc, config_db, "Reads/Writes Users, Roles, Permissions")
+    Rel(ingestion_svc, iam_svc, "Authenticates/Authorizes Device", "API (OHS)")
+    Rel(ingestion_svc, device_mgmt_svc, "Validates Device ID (ACL)", "API (Conformist)")
+    Rel(data_proc_svc, device_mgmt_svc, "Enriches data with Location/Metadata", "API (Customer-Supplier)")
+    Rel(analytics_svc, ts_db, "Queries processed data", "Time-Series Query Language")
+    Rel(alert_svc, cc_svc, "Triggers Commands", "API (Customer-Supplier)")
+    Rel(cc_svc, config_db, "Reads/Writes Jobs")
+
+    ' Asynchronous Messaging
+    Rel(ingestion_svc, message_bus, "Publishes Raw Telemetry", "Topic: raw-telemetry (PL)")
+    Rel_R(message_bus, data_proc_svc, "Subscribes to Raw Telemetry", "raw-telemetry")
+    Rel_R(message_bus, alert_svc, "Subscribes to Raw/Processed Telemetry", "raw-telemetry / processed-data")
+    Rel(data_proc_svc, message_bus, "Publishes Processed Data", "Topic: processed-data (PL)")
+    Rel(data_proc_svc, ts_db, "Persists aggregated data")
+    
+}
+
+' External Relationships
+Rel(device, ingestion_svc, "Sends Payload", "API/HTTPS")
+Rel(cc_svc, device, "Sends Command/Desired State", "MQTT/CoAP")
+
+Rel(app, iam_svc, "Authenticates User", "API")
+Rel(app, device_mgmt_svc, "Manages Devices/Assets", "API")
+Rel(app, alert_svc, "Configures Rules", "API")
+Rel(app, analytics_svc, "Displays Dashboards/Reports", "API")
+Rel(app, cc_svc, "Dispatches Commands", "API")
+
+Rel(alert_svc, external_sys, "Sends Notifications/Webhooks")
+
+SHOW_LEGEND()
+@enduml

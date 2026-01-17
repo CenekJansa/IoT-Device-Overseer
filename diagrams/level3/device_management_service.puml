@@ -1,0 +1,33 @@
+@startuml C4_Component
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title C4 Level 3: Device Management Service (QuarkIoT)
+
+Container(device_mgmt_svc, "Device Management Service", "Microservice", "2. Device & Asset Management Bounded Context") {
+
+    Component(device_api, "Device API Controller", "REST Endpoint", "Handles HTTP requests for CRUD on Devices and Assets.")
+    Component(device_app_svc, "Device Application Service", "Application Service", "Coordinates transactions, translates requests to domain model methods.")
+    
+    ' DDD Domain Components
+    Component(device_ar, "Device Aggregate Root", "Domain Model", "Controls the consistency of Device Twin, Status, and associated Sensors/Assets.")
+    Component(device_registry, "Device Registry Service", "Domain Service", "Operations involving multiple Devices (e.g., locating by criteria).")
+    Component(device_repo, "Device Repository", "Repository", "Manages persistence and retrieval of the Device Aggregate.")
+    
+    ' Internal Relationships
+    Rel(device_api, device_app_svc, "Calls methods to manage devices.")
+    Rel(device_app_svc, device_ar, "Calls domain logic (e.g., device_ar.updateStatus(newStatus))")
+    Rel(device_app_svc, device_registry, "Calls complex, cross-aggregate domain queries.")
+    Rel(device_ar, device_repo, "Delegates persistence operations.")
+}
+
+' External Systems/Containers (from Level 2)
+ContainerDb(config_db, "Configuration DB", "PostgreSQL", "Stores Device Aggregate state.")
+ContainerQueue(ingestion_svc, "Message bus", "Kafka cluster", "Kafka")
+
+' External Relationships
+Rel_U(device_repo, config_db, "Uses for persistence")
+Rel_U(ingestion_svc, device_api, "Queries Device ACL/Metadata (Conformist)")
+Rel_U(app, device_api, "Manages Devices/Assets (User Interface)")
+
+SHOW_LEGEND()
+@enduml

@@ -1,0 +1,35 @@
+@startuml C4_Component
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title C4 Level 3: Data Analytics Service (QuarkIoT)
+
+Container(analytics_svc, "Analytics Service", "Microservice (e.g., Python/Java REST API)", "6. Data Analytics Bounded Context") {
+
+    Component(analytics_api, "Analytics API Controller", "REST Endpoint", "Exposes endpoints for Time-Series, Reports, Dashboards.")
+    Component(analytics_query_svc, "Analytics Query Service", "Application Service", "Constructs and executes complex queries against data stores.")
+    Component(query_parser, "Query Parser / Validator", "Utility Component", "Parses and validates incoming QueryParameters.")
+    Component(data_aggregator, "Data Aggregator", "In-Memory/Client Aggregator", "Performs client-side aggregation/resampling if required.")
+    
+    ' DDD Read-Model Components (Aggregates are Read-Models here)
+    Component(report_ar, "Report Aggregate Root", "Domain Model (Read-Model)", "Represents saved reports and their configurations.")
+    Component(report_repo, "Report Repository", "Repository", "Manages persistence and retrieval of Report configurations.")
+}
+
+' External Systems/Containers (from Level 2)
+Container(app, "Web/Mobile Application", "Client-side interface", "Displays visualizations and dashboards.")
+ContainerDb(ts_db, "Time-Series DB", "InfluxDB/Prometheus", "Source of processed time-series data.")
+ContainerDb(config_db, "Configuration DB", "PostgreSQL/RDBMS", "Stores Report configurations.")
+
+' Internal Relationships
+Rel(analytics_api, analytics_query_svc, "Delegates query execution")
+Rel(analytics_query_svc, query_parser, "Uses to parse/validate queries")
+Rel(analytics_query_svc, data_aggregator, "Uses for client-side aggregation/resampling")
+Rel(analytics_query_svc, report_repo, "Fetches Report configs")
+Rel(analytics_query_svc, report_ar, "Applies Report configuration logic")
+
+' External Relationships
+Rel_U(app, analytics_api, "Requests Time-Series data, Reports, Dashboards")
+Rel_U(analytics_query_svc, ts_db, "Queries processed metrics (Customer-Supplier)")
+
+SHOW_LEGEND()
+@enduml

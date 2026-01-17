@@ -1,0 +1,1 @@
+Run scripts with sudo, without elevation it does not download dependencies

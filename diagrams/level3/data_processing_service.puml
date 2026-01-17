@@ -1,0 +1,42 @@
+@startuml C4_Component
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title C4 Level 3: Data Processing Service (QuarkIoT)
+
+Container(data_proc_svc, "Data Processing Service", "Stream Processor (e.g., Flink, Spark Structured Streaming)", "4. Data Processing Bounded Context") {
+
+    Component(stream_consumer, "Raw Telemetry Consumer", "Kafka Consumer", "Subscribes to the 'raw-telemetry' stream.")
+    Component(enrichment_processor, "Enrichment Processor", "Stream Processing Component", "Adds contextual data (e.g., Location, Asset Hierarchy) to DataPoints.")
+    Component(device_metadata_client, "Device Metadata Client", "API Client (Anti-Corruption Layer)", "Fetches device/asset metadata from Device Management Service.")
+    
+    ' DDD Domain Components for Aggregation
+    Component(aggregation_pipeline, "Processing Pipeline Service", "Domain/Application Service", "Chains Enrichment, Filtering, and Aggregation steps.")
+    Component(aggregation_window_ar, "AggregationWindow Aggregate Root", "Domain Model (Stateful Operator)", "Manages state for time-based aggregations (e.g., Min, Max, Avg for a window).")
+    Component(aggregation_state_store, "Aggregation State Store", "Internal KV Store (e.g., RocksDB)", "Persists AggregationWindow state across processing restarts.")
+    
+    Component(processed_data_publisher, "Processed Data Publisher", "Kafka Producer", "Publishes enriched/aggregated data to 'processed-data' topic.")
+    Component(time_series_writer, "Time-Series Data Writer", "Database Client", "Persists aggregated data to the Time-Series DB.")
+
+    ' Internal Relationships
+    Rel(stream_consumer, enrichment_processor, "Feeds raw TelemetryEvent")
+    Rel(enrichment_processor, device_metadata_client, "Queries for enrichment data")
+    Rel(enrichment_processor, aggregation_pipeline, "Passes enriched data for further processing")
+    Rel(aggregation_pipeline, aggregation_window_ar, "Applies aggregation logic to windows")
+    Rel(aggregation_window_ar, aggregation_state_store, "Persists/Loads aggregation state")
+    Rel(aggregation_pipeline, processed_data_publisher, "Publishes finalized aggregated data (stream)")
+    Rel(aggregation_pipeline, time_series_writer, "Persists finalized aggregated data (batch/sink)")
+}
+
+' External Systems/Containers (from Level 2)
+Container(device_mgmt_svc, "Device Management Service", "Microservice", "2. Device & Asset Management")
+ContainerQueue(message_bus, "Message Bus", "Kafka Cluster", "raw-telemetry, processed-data topics")
+ContainerDb(ts_db, "Time-Series DB", "InfluxDB/Prometheus", "Stores processed, high-volume time-series data.")
+
+' External Relationships
+Rel(message_bus, stream_consumer, "Subscribes to raw-telemetry")
+Rel(device_metadata_client, device_mgmt_svc, "Fetches Device/Asset Metadata (Customer-Supplier)")
+Rel(processed_data_publisher, message_bus, "Publishes to processed-data (Published Language)")
+Rel(time_series_writer, ts_db, "Writes aggregated metrics")
+
+SHOW_LEGEND()
+@enduml

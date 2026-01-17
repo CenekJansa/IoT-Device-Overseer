@@ -1,0 +1,49 @@
+@startuml C4_Context
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+' Updated Title with project name
+title **QuarkIoT** System Context Diagram
+
+Enterprise_Boundary(c1, "Your Enterprise") {
+
+    ' Updated System box with project name as the label
+    System(quark_iot, "**QuarkIoT Platform**", "Manages Devices, Ingests Data, Processes Streams, and Generates Alerts/Analytics")
+}
+
+' External Actors
+Person(user, "Platform User", "Operator, Analyst, or Administrator who configures and monitors the system.")
+Person(device, "IoT Device", "Physical hardware (sensor/actuator) sending telemetry and receiving commands.")
+
+' External Systems
+System(app, "Web/Mobile Application", "Front-end interface for users to interact with the platform's APIs.")
+System_Ext(external_sys, "External Systems", "Third-party services (e.g., ERP, Ticketing System) for integration.")
+
+' Relationships
+Rel(device, quark_iot, "Sends Telemetry (DataPoints)", "MQTT/HTTPS")
+Rel(quark_iot, device, "Sends Commands (Downlink)", "MQTT/CoAP")
+
+Rel(user, app, "Uses")
+Rel(app, quark_iot, "Manages Devices, Configures Rules, Queries Data", "API/HTTPS")
+
+Rel(quark_iot, external_sys, "Sends Notifications, Reports, and Data Exports", "Webhook/API/SFTP")
+
+SHOW_LEGEND()
+@enduml
+
+/'
+IoT Device ↔ IoT Platform:
+
+    Uplink (Data): The Device sends raw sensor data (Telemetry Ingestion Context).
+
+    Downlink (Control): The Platform sends commands or updates to the device (Command & Control Context).
+
+Platform User → Web/Mobile Application ↔ IoT Platform:
+
+    The user interacts with the application (e.g., a dashboard).
+
+    The application calls the platform's APIs for Authentication (IAM), Device configuration (Device & Asset Management), Rule creation (Alerting & Rules), and Data retrieval (Data Analytics).
+
+IoT Platform → External Systems:
+
+    The platform sends alerts and notifications (Alerting & Rules Context) or exported data and reports (Data Analytics Context).
+'/

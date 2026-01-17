@@ -1,0 +1,6 @@
+DB_NAME=iot_platform
+DB_USER=admin
+DB_PASS=admin
+DB_PORT=5432
+
+KAFKA_BOOTSTRAP_SERVERS=broker:9092

@@ -1,0 +1,32 @@
+image: maven:3.9-eclipse-temurin-21
+
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
+  MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version"
+
+cache:
+  paths:
+    - .m2/repository
+
+stages:
+  - build
+
+compile:
+  stage: build
+  script:
+    - echo "Compiling the project..."
+    - mvn $MAVEN_CLI_OPTS clean compile
+  artifacts:
+    reports:
+      junit:
+        - "**/target/surefire-reports/TEST-*.xml"
+    paths:
+      - "*/target/"
+    expire_in: 1 hour
+  only:
+    - branches
+    - merge_requests
+    - tags
+  tags:
+    - shared-fi
+

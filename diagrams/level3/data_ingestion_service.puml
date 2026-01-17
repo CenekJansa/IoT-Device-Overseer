@@ -1,0 +1,30 @@
+@startuml C4_Component
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title C4 Level 3: Data Ingestion Service (QuarkIoT)
+
+Container(ingestion_svc, "Data Ingestion Service", "API Gateway/Microservice", "3. Telemetry Ingestion Bounded Context") {
+
+    Component(ingestion_api, "Ingestion API Controller", "High-Throughput Endpoint", "Accepts raw Payload from devices (HTTPS/gRPC).")
+    Component(validation_handler, "Validation Handler", "Application Service", "Validates Payload Schema and content.")
+    Component(dlq_publisher, "DLQ Publisher", "Message Producer", "Routes invalid payloads to the Dead-Letter Queue.")
+    Component(raw_data_publisher, "Raw Data Publisher", "Message Producer", "Formats and publishes valid TelemetryEvent(s).")
+}
+
+' External Systems/Containers (from Level 2)
+Container(device, "IoT Device", "Physical hardware", "Sends raw telemetry.")
+ContainerQueue(message_bus, "Message Bus", "Kafka Cluster", "raw-telemetry topic")
+
+' External Relationships
+Rel_U(device, ingestion_api, "Submits raw data")
+
+' Internal Relationships
+Rel(validation_handler, raw_data_publisher, "Valid Payload")
+Rel(validation_handler, dlq_publisher, "Invalid Payload")
+Rel(ingestion_api, validation_handler, "Submits Payload")
+
+Rel_R(raw_data_publisher, message_bus, "Publishes TelemetryEvent (raw-telemetry topic)")
+Rel_R(dlq_publisher, message_bus, "Publishes Invalid Data (DLQ topic)")
+
+SHOW_LEGEND()
+@enduml
